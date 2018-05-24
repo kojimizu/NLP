@@ -1,2 +1,4 @@
-# Introduction-Statistical-Modeling
-データ解析のための統計モデリング入門
+
+# Natural Language Processing
+
+Text Mining with R from 2018 May
