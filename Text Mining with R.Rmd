@@ -1127,4 +1127,80 @@ kjv_bigrams %>%
 Figure 4.6 thus lays out a common “blueprint” of language within the Bible, particularly focused around “thy” and “thou” (which could probably be considered stopwords!) You can use the gutenbergr package and these `count_bigrams/visualize_bigrams` functions to visualize bigrams in other classic books you’re interested in.
 
 ## 4.2 Counting and correlating pairs of words with the widyr package
+Tokenizing by n-gram is a useful way to explore pairs of adjacent words. However, we may also be interested in words that tend to co-occur within particular documents or particular chapters, even if they don’t occur next to each other.
+
+Tidy data is a useful structure for comparing between variables or grouping by rows, but it can be challenging to compare between rows: for example, to count the number of times that two words appear within the same document, or to see how correlated they are. Most operations for finding pairwise counts or correlations need to turn the data into a wide matrix first.
+
+We’ll examine some of the ways tidy text can be turned into a wide matrix in Chapter 5, but in this case it isn’t necessary. The widyr package makes operations such as computing counts and correlations easy, by simplifying the pattern of “widen data, perform an operation, then re-tidy data” (Figure 4.7). We’ll focus on a set of functions that make pairwise comparisons between groups of observations (for example, between documents, or sections of text).
+
+### 4.2.1 Counting and correlating among sections 
+Consider the book “Pride and Prejudice” divided into 10-line sections, as we did (with larger sections) for sentiment analysis in Chapter 2. We may be interested in what words tend to appear within the same section.
+
+```{r 4.2.1-1}
+austen_section_words <- austen_books() %>% 
+  filter(book=="Pride & Prejudice") %>% 
+  mutate(section=row_number() %/% 10) %>% 
+  filter(section>0) %>% 
+  unnest_tokens(word,text) %>% 
+  filter(!word %in% stop_words$word)
+
+austen_section_words
+```
+
+One useful function from widyr is the `pairwise_count()` function. The prefix `pairwise_` means it will result in one row for each pair of words in the `word` variable. This lets us count common pairs of words co-appearing within the same section:
+```{r}
+# install.packages("widyr")
+library(widyr)
+
+# count words co-occuring within sections
+word_pairs <- austen_section_words %>% 
+  pairwise_count(word,section,sort=T)
+word_pairs
+```
+
+Notice that while the input had one row for each pair of a document (a 10-line section) and a word, the output has one row for each pair of words. This is also a tidy format, but of a very different structure that we can use to answer new questions.
+
+For example, we can see that the most common pair of words in a section is “Elizabeth” and “Darcy” (the two main characters). We can easily find the words that most often occur with Darcy:
+```{r}
+word_pairs %>% 
+  filter(item1=="darcy")
+```
+
+### 4.2.2 Pairwise correlation
+Pairs like “Elizabeth” and “Darcy” are the most common co-occurring words, but that’s not particularly meaningful since they’re also the most common individual words. We may instead want to examine correlation among words, which indicates how often they appear together relative to how often they appear separately.
+
+In particular, here we’ll focus on the phi coefficient, a common measure for binary correlation. The focus of the phi coefficient is how much more likely it is that either both word X and Y appear, or neither do, than that one appears without the other.
+
+Consider the following table:
+$$
+\begin{table}{htb}
+  \begin{tabular}{lcrr}
+   Has word X & n11 & n10 & n1
+   
+  
+  \end{tabular}
+\end{table}
+$$
+---
+title: "Text Mining with R"
+output:
+  word_document: default
+  html_document: default
+---
+
+For example $n_{11}$ represents the number of documents where both word X and word Y appear, $n_{00}$ the number where neither appears, and $n_{10}$ and $n_{01}$ the cases one apprear without the other. In terms of this table, the phi coefficient is:
+$$
+\phi =\frac{n_{11}n_{00}-n_{10}n_{01}}{\sqrt{n_1n_2n_0n_1}}
+$$
+
+* The phi coefficient is equivalent to the Pearson correlation, which you may have heard of elsewhere, when it is applied to binary data).
+
+The `pairwise_cor()` function in widyr lets us find the phi coefficient between words based on how often they appear in the same section. Its syntax is similar to `pairwise_count()`.
+
+
+
+
+
+
+
 
