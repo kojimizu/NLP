@@ -195,35 +195,35 @@ library(gutenbergr)
 
 ```{r 1.5 word frequency 1}
 # install.packages("gutenbergr")
-hgwells <- gutenberg_download(c(35, 36, 5230, 159))
+# hgwells <- gutenberg_download(c(35, 36, 5230, 159))
 ```
 
 ```{r 1.5 word frequency 2}
 library(magrittr)
-tidy_hgwells <- hgwells %>% 
-  unnest_tokens(word,text) %>% 
-  anti_join(stop_words)
+# tidy_hgwells <- hgwells %>% 
+  # unnest_tokens(word,text) %>% 
+  # anti_join(stop_words)
 ```
 
 Just for kicks, what are the most common words in these novels of H.G. Wells?
 ```{r 1.5 word frequency 3}
-tidy_hgwells %>% 
-  count(word,sort=T)
+# tidy_hgwells %>% 
+  # count(word,sort=T)
 ```
 
 Now let’s get some well-known works of the Brontë sisters, whose lives overlapped with Jane Austen’s somewhat but who wrote in a rather different style. Let’s get Jane Eyre, Wuthering Heights, The Tenant of Wildfell Hall, Villette, and Agnes Grey. We will again use the Project Gutenberg ID numbers for each novel and access the texts using gutenberg_download().
 ```{r word frequency 4}
-bronte <- gutenberg_download(c(1260, 768, 969, 9182, 767))
+# bronte <- gutenberg_download(c(1260, 768, 969, 9182, 767))
 
-tidy_bronte <- bronte %>% 
-  unnest_tokens(word,text) %>% 
-  anti_join(stop_words)
+# tidy_bronte <- bronte %>% 
+  # unnest_tokens(word,text) %>% 
+  # anti_join(stop_words)
 ```
 
 What are the most common words in these novels of the Brontë sisters?
 ```{r 1.5 word frequency 5}
-tidy_bronte %>% 
-  count(word,sort=T)
+# tidy_bronte %>% 
+#   count(word,sort=T)
 ```
 
 Interesting that “time”, “eyes”, and “hand” are in the top 10 for both H.G. Wells and the Brontë sisters.
@@ -231,38 +231,36 @@ Interesting that “time”, “eyes”, and “hand” are in the top 10 for bo
 Now, let’s calculate the frequency for each word for the works of Jane Austen, the Brontë sisters, and H.G. Wells by binding the data frames together. We can use spread and gather from tidyr to reshape our dataframe so that it is just what we need for plotting and comparing the three sets of novels.
 
 ```{r 1.5 word frequency 6}
-
-library(tidyr)
-frequency <- bind_rows(mutate(tidy_bronte, author = "Brontë Sisters"),
-                       mutate(tidy_hgwells, author = "H.G. Wells"), 
-                       mutate(tidy_books, author = "Jane Austen")) %>% 
-  mutate(word = str_extract(word, "[a-z']+")) %>%
-  count(author, word) %>%
-  group_by(author) %>%
-  mutate(proportion = n / sum(n)) %>% 
-  select(-n) %>% 
-  spread(author, proportion) %>% 
-  gather(author, proportion, `Brontë Sisters`:`H.G. Wells`)```
+# 
+# library(tidyr)
+# frequency <- bind_rows(mutate(tidy_bronte, author = "Brontë Sisters"),
+#                        mutate(tidy_hgwells, author = "H.G. Wells"), 
+#                        mutate(tidy_books, author = "Jane Austen")) %>% 
+#   mutate(word = str_extract(word, "[a-z']+")) %>%
+#   count(author, word) %>%
+#   group_by(author) %>%
+#   mutate(proportion = n / sum(n)) %>% 
+#   select(-n) %>% 
+#   spread(author, proportion) %>% 
+#   gather(author, proportion, `Brontë Sisters`:`H.G. Wells`)```
 ```
 
 We use `str_extract()` here because the UTF-8 encoded texts from Project Gutenberg have some examples of words with underscores around them to indicate emphasis (like italics). The tokenizer treated these as words, but we don’t want to count “_any_” separately from “any” as we saw in our initial data exploration before choosing to use `str_extract()`.
 
 Now let’s plot (Figure 1.3).
 ```{r 1.5 word frequency 7}
-library(scales)
-# expect a warning about rows with missing values being removed
-ggplot(frequency, aes(x = proportion, y = `Jane Austen`, color = abs(`Jane Austen` - proportion))) +
-  geom_abline(color = "gray40", lty = 2) +
-  geom_jitter(alpha = 0.1, size = 2.5, width = 0.3, height = 0.3) +
-  geom_text(aes(label = word), check_overlap = TRUE, vjust = 1.5) +
-  scale_x_log10(labels = percent_format()) +
-  scale_y_log10(labels = percent_format()) +
-  scale_color_gradient(limits = c(0, 0.001), low = "darkslategray4", high = "gray75") +
-  facet_wrap(~author, ncol = 2) +
-  theme(legend.position="none") +
-  labs(y = "Jane Austen", x = NULL)
-
-
+# library(scales)
+# # expect a warning about rows with missing values being removed
+# ggplot(frequency, aes(x = proportion, y = `Jane Austen`, color = abs(`Jane Austen` - proportion))) +
+#   geom_abline(color = "gray40", lty = 2) +
+#   geom_jitter(alpha = 0.1, size = 2.5, width = 0.3, height = 0.3) +
+#   geom_text(aes(label = word), check_overlap = TRUE, vjust = 1.5) +
+#   scale_x_log10(labels = percent_format()) +
+#   scale_y_log10(labels = percent_format()) +
+#   scale_color_gradient(limits = c(0, 0.001), low = "darkslategray4", high = "gray75") +
+#   facet_wrap(~author, ncol = 2) +
+#   theme(legend.position="none") +
+#   labs(y = "Jane Austen", x = NULL)
 ```
 
 Words that are close to the line in these plots have similar frequencies in both sets of texts, for example, in both Austen and Brontë texts (“miss”, “time”, “day” at the upper frequency end) or in both Austen and Wells texts (“time”, “day”, “brother” at the high frequency end). Words that are far from the line are words that are found more in one set of texts than another. For example, in the Austen-Brontë panel, words like “elizabeth”, “emma”, and “fanny” (all proper nouns) are found in Austen’s texts but not much in the Brontë texts, while words like “arthur” and “dog” are found in the Brontë texts but not the Austen texts. In comparing H.G. Wells with Jane Austen, Wells uses words like “beast”, “guns”, “feet”, and “black” that Austen does not, while Austen uses words like “family”, “friend”, “letter”, and “dear” that Wells does not.
@@ -272,11 +270,11 @@ Overall, notice in Figure 1.3 that the words in the Austen-Brontë panel are clo
 Let’s quantify how similar and different these sets of word frequencies are using a correlation test. How correlated are the word frequencies between Austen and the Brontë sisters, and between Austen and Wells?
 
 ```{r}
-cor.test(data=frequency[frequency$author == "Brontë Sisters",],
-         ~proportion+"Jane Austen")
-
-cor.test(data = frequency[frequency$author == "H.G. Wells",], 
-         ~ proportion + `Jane Austen`)
+# cor.test(data=frequency[frequency$author == "Brontë Sisters",],
+#          ~proportion+"Jane Austen")
+# 
+# cor.test(data = frequency[frequency$author == "H.G. Wells",], 
+#          ~ proportion + `Jane Austen`)
 ```
 
 Just as we saw in the plots, the word frequencies are more correlated between the Austen and Brontë novels than between Austen and H.G. Wells.
@@ -758,90 +756,90 @@ http://www.gutenberg.org/ebooks/5001
 
 This is a pretty diverse bunch. They may all be physics classics, but they were written across a 300-year timespan, and some of them were first written in other languages and then translated to English. Perfectly homogeneous these are not, but that doesn’t stop this from being an interesting exercise!
 ```{r 3.4-1}
-library(gutenbergr)
-physics <- gutenberg_download(c(37729, 14725, 13476, 5001), 
-                              meta_fields = "author")
+# library(gutenbergr)
+# physics <- gutenberg_download(c(37729, 14725, 13476, 5001), 
+#                               meta_fields = "author")
 ```
 
 Now that we have the texts, let’s use `unnest_tokens()` and `count()` to find out how many times each word was used in each text.
 ```{r 3.4-2}
-physics_words <- physics %>%
-  unnest_tokens(word, text) %>%
-  count(author, word, sort = TRUE) %>%
-  ungroup()
-
-physics_words
+# physics_words <- physics %>%
+#   unnest_tokens(word, text) %>%
+#   count(author, word, sort = TRUE) %>%
+#   ungroup()
+# 
+# physics_words
 ```
 
 Here we see just the raw counts; we need to remember that these documents are all different lengths. Let’s go ahead and calculate tf-idf, then visualize the high tf-idf words in Figure 3.5.
 ```{r 3.4-3}
-plot_physics <- physics_words %>%
-  bind_tf_idf(word, author, n) %>%
-  arrange(desc(tf_idf)) %>%
-  mutate(word = factor(word, levels = rev(unique(word)))) %>%
-  mutate(author = factor(author, levels = c("Galilei, Galileo",
-                                            "Huygens, Christiaan", 
-                                            "Tesla, Nikola",
-                                            "Einstein, Albert")))
-
-plot_physics %>% 
-  group_by(author) %>% 
-  top_n(15, tf_idf) %>% 
-  ungroup() %>%
-  mutate(word = reorder(word, tf_idf)) %>%
-  ggplot(aes(word, tf_idf, fill = author)) +
-  geom_col(show.legend = FALSE) +
-  labs(x = NULL, y = "tf-idf") +
-  facet_wrap(~author, ncol = 2, scales = "free") +
-  coord_flip()
+# plot_physics <- physics_words %>%
+#   bind_tf_idf(word, author, n) %>%
+#   arrange(desc(tf_idf)) %>%
+#   mutate(word = factor(word, levels = rev(unique(word)))) %>%
+#   mutate(author = factor(author, levels = c("Galilei, Galileo",
+#                                             "Huygens, Christiaan", 
+#                                             "Tesla, Nikola",
+#                                             "Einstein, Albert")))
+# 
+# plot_physics %>% 
+#   group_by(author) %>% 
+#   top_n(15, tf_idf) %>% 
+#   ungroup() %>%
+#   mutate(word = reorder(word, tf_idf)) %>%
+#   ggplot(aes(word, tf_idf, fill = author)) +
+#   geom_col(show.legend = FALSE) +
+#   labs(x = NULL, y = "tf-idf") +
+#   facet_wrap(~author, ncol = 2, scales = "free") +
+#   coord_flip()
 ```
 
 Very interesting indeed. One thing we see here is “eq” in the Einstein text?!
-```{r 3.4-3}
-library(stringr)
-physics %>% 
-  filter(str_detect(text, "eq\\.")) %>% 
-  select(text)
+```{r 3.4-4}
+# library(stringr)
+# physics %>% 
+#   filter(str_detect(text, "eq\\.")) %>% 
+#   select(text)
 ```
 
 Some cleaning up of the text may be in order. “K1” is the name of a coordinate system for Einstein:
-```{r 3.4-4}
-physics %>% 
-  filter(str_detect(text,"K1")) %>% 
-  select(text)
+```{r 3.4-5}
+# physics %>% 
+#   filter(str_detect(text,"K1")) %>% 
+#   select(text)
 ```
 
 Maybe it makes sense to keep this one. Also notice that in this line we have “co-ordinate”, which explains why there are separate “co” and “ordinate” items in the high tf-idf words for the Einstein text; the `unnest_tokens()` function separates around punctuation. Notice that the tf-idf scores for “co” and “ordinate” are close to same!
 
 “AB”, “RC”, and so forth are names of rays, circles, angles, and so forth for Huygens.
-```{r 3.4-5}
-physics %>% 
-  filter(str_detect(text, "AK")) %>% 
-  select(text)
+```{r 3.4-6}
+# physics %>% 
+#   filter(str_detect(text, "AK")) %>% 
+#   select(text)
 ```
 
 Let’s remove some of these less meaningful words to make a better, more meaningful plot. Notice that we make a custom list of stop words and use `anti_join()` to remove them; this is a flexible approach that can be used in many situations. We will need to go back a few steps since we are removing words from the tidy data frame.
-```{r}
-mystopwords <- data_frame(word = c("eq", "co", "rc", "ac", "ak", "bn", 
-                                   "fig", "file", "cg", "cb", "cm"))
-physics_words <- anti_join(physics_words, mystopwords, by = "word")
-plot_physics <- physics_words %>%
-  bind_tf_idf(word, author, n) %>%
-  arrange(desc(tf_idf)) %>%
-  mutate(word = factor(word, levels = rev(unique(word)))) %>%
-  group_by(author) %>% 
-  top_n(15, tf_idf) %>%
-  ungroup %>%
-  mutate(author = factor(author, levels = c("Galilei, Galileo",
-                                            "Huygens, Christiaan",
-                                            "Tesla, Nikola",
-                                            "Einstein, Albert")))
-
-ggplot(plot_physics, aes(word, tf_idf, fill = author)) +
-  geom_col(show.legend = FALSE) +
-  labs(x = NULL, y = "tf-idf") +
-  facet_wrap(~author, ncol = 2, scales = "free") +
-  coord_flip()
+```{r 3.4-7}
+# mystopwords <- data_frame(word = c("eq", "co", "rc", "ac", "ak", "bn", 
+#                                    "fig", "file", "cg", "cb", "cm"))
+# physics_words <- anti_join(physics_words, mystopwords, by = "word")
+# plot_physics <- physics_words %>%
+#   bind_tf_idf(word, author, n) %>%
+#   arrange(desc(tf_idf)) %>%
+#   mutate(word = factor(word, levels = rev(unique(word)))) %>%
+#   group_by(author) %>% 
+#   top_n(15, tf_idf) %>%
+#   ungroup %>%
+#   mutate(author = factor(author, levels = c("Galilei, Galileo",
+#                                             "Huygens, Christiaan",
+#                                             "Tesla, Nikola",
+#                                             "Einstein, Albert")))
+# 
+# ggplot(plot_physics, aes(word, tf_idf, fill = author)) +
+#   geom_col(show.legend = FALSE) +
+#   labs(x = NULL, y = "tf-idf") +
+#   facet_wrap(~author, ncol = 2, scales = "free") +
+#   coord_flip()
 ```
 
 One thing we can conclude from Figure 3.6 is that we don’t hear enough about ramparts or things being ethereal in physics today.
@@ -1106,22 +1104,22 @@ visualize_bigrams <- function(bigrams){
 At this point, we could visualize bigrams in other works, such as the King James Version of the Bible:
 ```{r}
 # the King James version is book 10 on project Gutenberg
-library(gutenbergr)
-kjv <- gutenberg_download(10)
+# library(gutenbergr)
+# kjv <- gutenberg_download(10)
 ```
 
 ```{r}
-library(stringr)
-
-kjv_bigrams <- kjv %>% 
-  count_bigrams()
-
-# filter out rare combinations, as well as digits
-kjv_bigrams %>% 
-  filter(n>40,
-         !str_detect(word1, "\\d"),
-         !str_detect(word2,"\\d")) %>% 
-  visualize_bigrams()
+# library(stringr)
+# 
+# kjv_bigrams <- kjv %>% 
+#   count_bigrams()
+# 
+# # filter out rare combinations, as well as digits
+# kjv_bigrams %>% 
+#   filter(n>40,
+#          !str_detect(word1, "\\d"),
+#          !str_detect(word2,"\\d")) %>% 
+#   visualize_bigrams()
 ```
 
 Figure 4.6 thus lays out a common “blueprint” of language within the Bible, particularly focused around “thy” and “thou” (which could probably be considered stopwords!) You can use the gutenbergr package and these `count_bigrams/visualize_bigrams` functions to visualize bigrams in other classic books you’re interested in.
@@ -1148,7 +1146,7 @@ austen_section_words
 ```
 
 One useful function from widyr is the `pairwise_count()` function. The prefix `pairwise_` means it will result in one row for each pair of words in the `word` variable. This lets us count common pairs of words co-appearing within the same section:
-```{r}
+```{r 4.2.1-2}
 # install.packages("widyr")
 library(widyr)
 
@@ -1161,7 +1159,7 @@ word_pairs
 Notice that while the input had one row for each pair of a document (a 10-line section) and a word, the output has one row for each pair of words. This is also a tidy format, but of a very different structure that we can use to answer new questions.
 
 For example, we can see that the most common pair of words in a section is “Elizabeth” and “Darcy” (the two main characters). We can easily find the words that most often occur with Darcy:
-```{r}
+```{r 4.2.1-3}
 word_pairs %>% 
   filter(item1=="darcy")
 ```
@@ -1172,7 +1170,7 @@ Pairs like “Elizabeth” and “Darcy” are the most common co-occurring word
 In particular, here we’ll focus on the phi coefficient, a common measure for binary correlation. The focus of the phi coefficient is how much more likely it is that either both word X and Y appear, or neither do, than that one appears without the other.
 
 Consider the following table:
-$$
+
 \begin{table}{htb}
   \begin{tabular}{lcrr}
    Has word X & n11 & n10 & n1
@@ -1180,13 +1178,6 @@ $$
   
   \end{tabular}
 \end{table}
-$$
----
-title: "Text Mining with R"
-output:
-  word_document: default
-  html_document: default
----
 
 For example $n_{11}$ represents the number of documents where both word X and word Y appear, $n_{00}$ the number where neither appears, and $n_{10}$ and $n_{01}$ the cases one apprear without the other. In terms of this table, the phi coefficient is:
 $$
@@ -1196,8 +1187,176 @@ $$
 * The phi coefficient is equivalent to the Pearson correlation, which you may have heard of elsewhere, when it is applied to binary data).
 
 The `pairwise_cor()` function in widyr lets us find the phi coefficient between words based on how often they appear in the same section. Its syntax is similar to `pairwise_count()`.
+```{r 4.2.2-1}
+# we need to filter for at least relatively common words first
+library(widyr)
+word_cors <- austen_section_words %>% 
+  group_by(word) %>% 
+  filter(n()>=20) %>% 
+  pairwise_cor(word,section,sort=T)
+word_cors
+```
 
+This output format is helpful for exploration. For example, we could find the words most correlated with a word like “pounds” using a `filter` operation.
+```{r 4.2.2-2}
+head(word_cors)
+word_cors %>% 
+  filter(item1=="pounds")
+```
 
+This lets us pick particular interesting words and find the other words most associated with them (Figure 4.8).
+```{r 4.2.2-3}
+word_cors %>% 
+  filter(item1 %in% c("elizabeth","pounds","married","pride")) %>% 
+  group_by(item1) %>% 
+  top_n(6) %>% 
+  ungroup() %>% 
+  mutate(item2=reorder(item2,correlation)) %>% 
+  ggplot(aes(item2,correlation))+
+  geom_bar(stat="identity") +
+  facet_wrap(~item1,scale="free")+
+  coord_flip()
+
+```
+
+Just as we used ggraph to visualize bigrams, we can use it to visualize the correlations and clusters of words that were found by the widyr package (Figure 4.9).
+```{r 4.4.2-4}
+set.seed(2016)
+
+word_cors %>% 
+  filter(correlation>.15) %>% 
+  graph_from_data_frame() %>% 
+  ggraph(layout="fr")+
+  geom_edge_link(aes(edge_alpha=correlation),show.legend = F)+
+  geom_node_point(color="lightblue",size=5)+
+  geom_node_text(aes(label=name),repel=T)+
+  theme_void()
+```
+
+Note that unlike the bigram analysis, the relationships here are symmetrical, rather than directional (there are no arrows). We can also see that while pairings of names and titles that dominated bigram pairings are common, such as “colonel/fitzwilliam”, we can also see pairings of words that appear close to each other, such as “walk” and “park”, or “dance” and “ball”.
+
+## 4.3 Summary
+This chapter showed how the tidy text approach is useful not only for analyzing individual words, but also for exploring the relationships and connections between words. Such relationships can involve n-grams, which enable us to see what words tend to appear after others, or co-occurences and correlations, for words that appear in proximity to each other. This chapter also demonstrated the ggraph package for visualizing both of these types of relationships as networks. These network visualizations are a flexible tool for exploring relationships, and will play an important role in the case studies in later chapters.
+
+# Chapter 5: Converting to and from non-tidy formats
+In the previous chapters, we’ve been analyzing text arranged in the tidy text format: a table with one-token-per-document-per-row, such as is constructed by the `unnest_tokens()` function. This lets us use the popular suite of tidy tools such as dplyr, tidyr, and ggplot2 to explore and visualize text data. We’ve demonstrated that many informative text analyses can be performed using these tools.
+
+However, most of the existing R tools for natural language processing, besides the tidytext package, aren’t compatible with this format. The CRAN Task View for Natural Language Processing lists a large selection of packages that take other structures of input and provide non-tidy outputs. These packages are very useful in text mining applications, and many existing text datasets are structured according to these formats.
+
+Computer scientist Hal Abelson has observed that “No matter how complex and polished the individual operations are, it is often the quality of the glue that most directly determines the power of the system” (Abelson 2008). In that spirit, this chapter will discuss the “glue” that connects the tidy text format with other important packages and data structures, allowing you to rely on both existing text mining 
+
+Figure 5.1: A flowchart of a typical text analysis that combines tidytext with other tools and data formats, particularly the tm or quanteda packages. This chapter shows how to convert back and forth between document-term matrices and tidy data frames, as well as converting from a Corpus object to a text data frame.
+
+Figure 5.1 illustrates how an analysis might switch between tidy and non-tidy data structures and tools. This chapter will focus on the process of tidying document-term matrices, as well as casting a tidy data frame into a sparse matrix. We’ll also explore how to tidy Corpus objects, which combine raw text with document metadata, into text data frames, leading to a case study of ingesting and analyzing financial articles.
+
+## 5.1 Tidying a document term matrix
+
+One of the most common structures that text mining packages work with is the document-term matrix (or DTM). This is a matrix where:
+
+- each row represents one document (such as a book or article),
+- each column represents one term, and
+- each value (typically) contains the number of appearances of that term in that document.
+
+Since most pairings of document and term do not occur (they have the value zero), DTMs are usually implemented as sparse matrices. These objects can be treated as though they were matrices (for example, accessing particular rows and columns), but are stored in a more efficient format. We’ll discuss several implementations of these matrices in this chapter.
+
+DTM objects cannot be used directly with tidy tools, just as tidy data frames cannot be used as input for most text mining packages. Thus, the tidytext package provides two verbs that convert between the two formats.
+
+- `tidy()` turns a document-term matrix into a tidy data frame. This verb comes from the broom package (Robinson 2017), which provides similar tidying functions for many statistical models and objects.
+- `cast()` turns a tidy one-term-per-row data frame into a matrix. tidytext provides three variations of this verb, each converting to a different type of matrix: `cast_sparse()` (converting to a sparse matrix from the Matrix package), `cast_dtm()` (converting to a `DocumentTermMatrix` object from tm), and `cast_dfm()` (converting to a `dfm` object from quanteda).
+
+As shown in Figure 5.1, a DTM is typically comparable to a tidy data frame after a `count` or a `group_by`/`summarize` that contains counts or another statistic for each combination of a term and document.
+
+### 5.1.1 Tidying DocumentTermMatrix objects
+
+Perhaps the most widely used implementation of DTMs in R is the `DocumentTermMatrix` class in the tm package. Many available text mining datasets are provided in this format. For example, consider the collection of Associated Press newspaper articles included in the topicmodels package.
+```{r 5.1.1-1}
+# install.packages("tm")
+# install.packages("topicmodels")
+
+library(tm)
+library(topicmodels)
+
+data("AssociatedPress", package = "topicmodels")
+AssociatedPress
+```
+
+We see that this dataset contains documents (each of them an AP article) and terms (distinct words). Notice that this DTM is 99% sparse (99% of document-word pairs are zero). We could access the terms in the document with the `Terms()` function.
+
+```{r 5.1.1-2}
+terms <- Terms(AssociatedPress)
+head(terms)
+```
+
+If we wanted to analyze this data with tidy tools, we would first need to turn it into a datha frame with one-token-per-document-per-row. The broom package introduced the `tidy()` verb, which takes a non-tidy object and turns it into a tidy data frame. The tidytext package implements this method for `DocumentTermMatrix` objects.
+```{r 5.1.1-2}
+library(dplyr)
+library(tidytext)
+
+ap_td <- tidy(AssociatedPress)
+ap_td
+```
+
+Notice that we now have a tidy three-column tbl_df, with variables `document`, `term`, and `count`. This tidying operation is similar to the `melt()` function from the reshape2 package (Wickham 2007) for non-sparse matrices.
+
+As we’ve seen in previous chapters, this form is convenient for analysis with the dplyr, tidytext and ggplot2 packages. For example, you can perform sentiment analysis on these newspaper articles with the approach described in Chapter 2.
+```{r 5.1.1-3}
+ap_sentiments <- ap_td %>% 
+  inner_join(get_sentiments("bing"),by=c(term="word"))
+ap_sentiments
+
+ap_sentiments %>% 
+  count(sentiment,term,wt=count) %>% 
+  filter(n>=200) %>% 
+  arrange(desc(n))
+```
+
+This would let us visualize which words from the AP articles most often contributed to positive or negative sentiment, seen in Figure 5.2. We can see that the most common positive words include “like”, “work”, “support”, and “good”, while the most negative words include “killed”, “death”, and “vice”. (The inclusion of “vice” as a negative term is probably a mistake on the algorithm’s part, since it likely usually refers to “vice president”).
+```{r 5.1.1-4}
+library(ggplot2)
+
+ap_sentiments %>% 
+  count(sentiment,term,wt=count) %>% 
+  ungroup() %>% 
+  filter(n>=200) %>% 
+  mutate(n=ifelse(sentiment=="negative",-n,n)) %>% 
+  mutate(term=reorder(term,n)) %>% 
+  ggplot(aes(term,n,fill=sentiment))+
+  geom_bar(stat="identity")+
+  ylab("Contribution tosentiment")+
+  coord_flip()
+```
+
+### 5.1.2 Tidying dfm objects
+Other text mining packages provide alternative implementations of document-term matrices, such as the `dfm` (document-feature matrix) class from the quanteda package (Benoit and Nulty 2016). For example, the quanteda package comes with a corpus of presidential inauguration speeches, which can be converted to a `dfm` using the appropriate function.
+```{r 5.1.2-1}
+install.packages("quanteda")
+library(quanteda)
+data("data_corpus_inaugural",package="quanteda")
+inaug_dfm <- quanteda::dfm(data_corpus_inaugural,verbose=F)
+inaug_dfm
+```
+
+The `tidy` method works on these document-feature matrices as well, turning into a one-token-per-document-per-row table:
+```{r 15.1.2-2}
+inaug_td <- tidy(inaug_dfm)
+inaug_td
+```
+
+We may be interested in finding the words most specific to each of the inaugural speeches. This could be quantified by calculating the tf-idf of each term-speech pair using the `bind_tf_idf()` function, as described in Chapter 3.
+```{r 15.1.2-3}
+inaug_tf_idf <- inaug_td %>% 
+  bind_tf_idf(term,document,count) %>% 
+  arrange(desc(tf_idf))
+inaug_tf_idf
+```
+
+We could use this data to pick four notable inaugural addresses (from Presidents Lincoln, Roosevelt, Kennedy, and Obama), and visualize the words most specific to each speech, as shown in Figure 5.3.
+```{r 15.1.2-4}
+inaug_tf_idf %>% 
+ggplot(aes(term,tf_idf,fill=document))+
+  geom_bar(stat="identity")+
+  ylab("tf-idf")+coord_flip()+facet_wrap(~document)
+```
 
 
 
