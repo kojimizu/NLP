@@ -1878,7 +1878,6 @@ top_terms %>%
 These topics are pretty clearly associated with the four books! There’s no question that the topic of “captain”, “nautilus”, “sea”, and “nemo” belongs to Twenty Thousand Leagues Under the Sea, and that “jane”, “darcy”, and “elizabeth” belongs to Pride and Prejudice. We see “pip” and “joe” from Great Expectations and “martians”, “black”, and “night” from The War of the Worlds. We also notice that, in line with LDA being a “fuzzy clustering” method, there can be words in common between multiple topics, such as “miss” in topics 1 and 4, and “time” in topics 3 and 4.
 
 ### 6.2.2 Pre-document classification
-
 Each document in this analysis represented a single chapter. Thus, we may want to know which topics are associated with each document. Can we put the chapters back together in the correct books? We can find this by examining the per-document-per-topic probabilities,$\gamma$.
 ```{r}
 chapters_gamma <- tidy(chapters_lda,matrix="gamma")
@@ -1943,11 +1942,186 @@ We notice that almost all of the chapters from Pride and Prejudice, War of the W
 
 It does look like some chapters from Great Expectations (which should be topic 4) were somewhat associated with other topics. Are there any cases where the topic most associated with a chapter belonged to another book? First we’d find the topic that was most associated with each chapter using `top_n()`, which is effectively the “classification” of that chapter.
 ```{r}
+chapter_classifications <- chapters_gamma %>%
+  group_by(title, chapter) %>%
+  top_n(1, gamma) %>%
+  ungroup()
+
+chapter_classifications
+## # A tibble: 193 x 4
+##    title               chapter topic gamma
+##    <chr>                 <int> <int> <dbl>
+##  1 Great Expectations       23     1 0.551
+##  2 Pride and Prejudice      43     1 1.000
+##  3 Pride and Prejudice      18     1 1.000
+##  4 Pride and Prejudice      45     1 1.000
+##  5 Pride and Prejudice      16     1 1.000
+##  6 Pride and Prejudice      29     1 1.000
+##  7 Pride and Prejudice      10     1 1.000
+##  8 Pride and Prejudice       8     1 1.000
+##  9 Pride and Prejudice      56     1 1.000
+## 10 Pride and Prejudice      47     1 1.000
+## # ... with 183 more rows
 
 ```
 
+We can then compare each to the “consensus” topic for each book (the most common topic among its chapters), and see which were most often misidentified.
+```{r}
+book_topics <- chapter_classifications %>% 
+  count(title,topic) %>% 
+  group_by(title) %>% 
+  top_n(1,n) %>% 
+  ungroup() %>% 
+  transmute(consensus=title,topic)
 
+chapter_classifications %>% 
+  inner_join(book_topics,by="topic") %>% 
+  filter(title!=consensus)
+## # A tibble: 2 x 5
+##   title              chapter topic gamma consensus            
+##   <chr>                <int> <int> <dbl> <chr>                
+## 1 Great Expectations      23     1 0.551 Pride and Prejudice  
+## 2 Great Expectations      54     3 0.480 The War of the Worlds
+```
 
-
+We see that only two chapters from Great Expectations were missclassified, as LDA described one as coming from the "Pride and PRejudice" topic (topic1) and one from The War of the Worlds (topic3). That's not bard for unsupervised clustering!
 
 ### 6.2.3 By word assignments: `augment`
+One step of the LDA algorithm is assigning each word in each document to a topic. The more words in a document are assigned to that topic, generally, the more weight (`gamma`) will go on that document-topic classification.
+
+We may want to take the original document-word pairs and find which words in each document were assigned to which topic. This is the job of the `augment()` function, which also originated in the broom package as a way of tidying model output. While `tidy()` retrieves the statistical components of the model, `augment()` uses a model to add information to each observation in the original data.
+```{r}
+assignments <- augument(chapters_lda,data=chapters_dtm)
+assignments
+## # A tibble: 104,721 x 4
+##    document              term  count .topic
+##    <chr>                 <chr> <dbl>  <dbl>
+##  1 Great Expectations_57 joe     88.     4.
+##  2 Great Expectations_7  joe     70.     4.
+##  3 Great Expectations_17 joe      5.     4.
+##  4 Great Expectations_27 joe     58.     4.
+##  5 Great Expectations_2  joe     56.     4.
+##  6 Great Expectations_23 joe      1.     4.
+##  7 Great Expectations_15 joe     50.     4.
+##  8 Great Expectations_18 joe     50.     4.
+##  9 Great Expectations_9  joe     44.     4.
+## 10 Great Expectations_13 joe     40.     4.
+## # ... with 104,711 more rows
+```
+
+This returns a tidy data frame of book-term counts, but adds an extra column: `.topic`, with the topic each term was assigned to within each document. (Extra columns added by `augment` always start with `.`, to prevent overwriting existing columns). We can combine this `assignments` table with the consensus book titles to find which words were incorrectly classified.
+```{r }
+assignments <- assignments %>% 
+  separate(document,c("title","chapter"),sep="_",convert=TRUE) %>% 
+  inner_join(book_topics,by=c(".topic"="topic"))
+
+assignments
+## # A tibble: 104,721 x 6
+##    title              chapter term  count .topic consensus         
+##    <chr>                <int> <chr> <dbl>  <dbl> <chr>             
+##  1 Great Expectations      57 joe     88.     4. Great Expectations
+##  2 Great Expectations       7 joe     70.     4. Great Expectations
+##  3 Great Expectations      17 joe      5.     4. Great Expectations
+##  4 Great Expectations      27 joe     58.     4. Great Expectations
+##  5 Great Expectations       2 joe     56.     4. Great Expectations
+##  6 Great Expectations      23 joe      1.     4. Great Expectations
+##  7 Great Expectations      15 joe     50.     4. Great Expectations
+##  8 Great Expectations      18 joe     50.     4. Great Expectations
+##  9 Great Expectations       9 joe     44.     4. Great Expectations
+## 10 Great Expectations      13 joe     40.     4. Great Expectations
+## # ... with 104,711 more rows
+```
+
+This combination of the true book (`title`) and the book assigned to it (`consensus`) is useful for further exploration. We can, for example, visualize a confusion matrix, showing how often words from one book were assigned to another, using dplyr’s `count()` and ggplot2’s `geom_tile` (Figure 6.6.
+```{r }
+assignments %>% 
+  count(title,consensus, wt=count) %>% 
+  group_by(title) %>% 
+  mutate(percent=n/sum(n)) %>% 
+  ggplot(aes(consensus,title,fill=percent))+
+  geom_tile()+
+  scale_fill_gradient2(high="red",label=percent_format())+
+  theme_minimal()+
+  theme(axis,text.x=element_text(angle=90,hjust=1),
+        panel.grid=element_blank())+
+  labs(x="Book words were assigned to",
+       y="Book words came from",
+       fill="% of assignments")
+```
+
+We notice that almost all the words for Pride and Prejudice, Twenty Thousand Leagues Under the Sea, and War of the Worlds were correctly assigned, while Great Expectations had a fair number of misassigned words (which, as we saw above, led to two chapters getting misclassified).
+
+What were the most commonly mistaken words?
+```{r}
+wrong_words <- assignments %>% 
+  filter(title!=consensus)
+
+wrong_words
+## # A tibble: 4,535 x 6
+##    title                                 chapter term     count .topic
+##    <chr>                                   <int> <chr>    <dbl>  <dbl>
+##  1 Great Expectations                         38 brother     2.     1.
+##  2 Great Expectations                         22 brother     4.     1.
+##  3 Great Expectations                         23 miss        2.     1.
+##  4 Great Expectations                         22 miss       23.     1.
+##  5 Twenty Thousand Leagues under the Sea       8 miss        1.     1.
+##  6 Great Expectations                         31 miss        1.     1.
+##  7 Great Expectations                          5 sergeant   37.     1.
+##  8 Great Expectations                         46 captain     1.     2.
+##  9 Great Expectations                         32 captain     1.     2.
+## 10 The War of the Worlds                      17 captain     5.     2.
+##    consensus                            
+##    <chr>                                
+##  1 Pride and Prejudice                  
+##  2 Pride and Prejudice                  
+##  3 Pride and Prejudice                  
+##  4 Pride and Prejudice                  
+##  5 Pride and Prejudice                  
+##  6 Pride and Prejudice                  
+##  7 Pride and Prejudice                  
+##  8 Twenty Thousand Leagues under the Sea
+##  9 Twenty Thousand Leagues under the Sea
+## 10 Twenty Thousand Leagues under the Sea
+## # ... with 4,525 more rows
+```
+
+```{r}
+wrong_words %>% 
+  count(title,consensus,term,wt=count) %>% 
+  ungroup() %>% 
+  arrange(desc(n))
+
+## # A tibble: 3,500 x 4
+##    title              consensus             term         n
+##    <chr>              <chr>                 <chr>    <dbl>
+##  1 Great Expectations Pride and Prejudice   love       44.
+##  2 Great Expectations Pride and Prejudice   sergeant   37.
+##  3 Great Expectations Pride and Prejudice   lady       32.
+##  4 Great Expectations Pride and Prejudice   miss       26.
+##  5 Great Expectations The War of the Worlds boat       25.
+##  6 Great Expectations Pride and Prejudice   father     19.
+##  7 Great Expectations The War of the Worlds water      19.
+##  8 Great Expectations Pride and Prejudice   baby       18.
+##  9 Great Expectations Pride and Prejudice   flopson    18.
+## 10 Great Expectations Pride and Prejudice   family     16.
+## # ... with 3,490 more rows
+```
+
+We can see that a number of words were often assigned to the Pride and Prejudice or War of the Worlds cluster even when they appeared in Great Expectations. For some of these words, such as “love” and “lady”, that’s because they’re more common in Pride and Prejudice (we could confirm that by examining the counts).
+
+On the other hand, there are a few wrongly classified words that never appeared in the novel they were misassigned to. For example, we can confirm “flopson” appears only in Great Expectations, even though it’s assigned to the “Pride and Prejudice” cluster.
+```{r}
+word_counts %>% 
+  filter(word=="flopson")
+
+## # A tibble: 3 x 3
+##   document              word        n
+##   <chr>                 <chr>   <int>
+## 1 Great Expectations_22 flopson    10
+## 2 Great Expectations_23 flopson     7
+## 3 Great Expectations_33 flopson     1
+```
+
+The LDA algorithm is stochastic, and it can accidentally land on a topic that spans multiple books. 
+
+## 6.3 Alternative LDA implementations
