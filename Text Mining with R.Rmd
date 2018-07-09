@@ -2125,3 +2125,84 @@ word_counts %>%
 The LDA algorithm is stochastic, and it can accidentally land on a topic that spans multiple books. 
 
 ## 6.3 Alternative LDA implementations
+The `LDA()` function in the topicmodels package is only one implementation of the latent Dirichlet allocation algorithm. For example, the mallet package (Mimno 2013) implements a wrapper around the MALLET Java package for text classification tools, and the tidytext package provides tidiers for this model output as well.
+
+The mallet package takes a somewhat different approach to the input format. For instance, it takes non-tokenized documents and performs the tokenization itself, and requires a separate file of stopwords. This means we have to collapse the text into one string for each document before performing LDA.
+```{r 6.3-1}
+# install.packages("mallet")
+# install.packages("rJava")
+
+library(rJava)
+library(mallet)
+
+# create a vector with one string per chapter
+collapsed <- by_chapter_word %>%
+  anti_join(stop_words, by = "word") %>%
+  mutate(word = str_replace(word, "'", "")) %>%
+  group_by(document) %>%
+  summarize(text = paste(word, collapse = " "))
+
+# create an empty file of "stopwords"
+file.create(empty_file <- tempfile())
+docs <- mallet.import(collapsed$document, collapsed$text, empty_file)
+
+mallet_model <- MalletLDA(num.topics = 4)
+mallet_model$loadDocuments(docs)
+mallet_model$train(100)
+```
+
+Once the model is created, however, we can use the `tidy()` and `augment()` functions described in the rest of the chapter in an almost identical way. This includes extracting the probabilities of words within each topic or topics within each document.
+```{r}
+# word-topic pairs
+tidy(mallet_model)
+
+# document-topic pairs
+tidy(mallet_model, matrix = "gamma")
+
+# column needs to be named "term" for "augment"
+term_counts <- rename(word_counts, term = word)
+augment(mallet_model, term_counts)
+```
+
+We could use ggplot2 to explore and visualize the model in the same way we did the LDA output.
+
+## 6.4 Summary
+This chapter introduces topic modeling for finding clusters of words that characterize a set of documents, and shows how the `tidy()` verb lets us explore and understand these models using dplyr and ggplot2. This is one of the advantages of the tidy approach to model exploration: the challenges of different output formats are handled by the tidying functions, and we can explore model results using a standard set of tools. In particular, we saw that topic modeling is able to separate and distinguish chapters from four separate books, and explored the limitations of the model by finding words and chapters that it assigned incorrectly.
+
+## References
+Robinson, David. 2017. broom: Convert Statistical Analysis Objects into Tidy Data Frames. https://CRAN.R-project.org/package=broom.
+
+Mimno, David. 2013. mallet: A Wrapper Around the Java Machine Learning Tool MALLET. https://cran.r-project.org/package=mallet.
+
+
+# Chapter 7: Case Study: Comparing Twitter Archives
+One type of text that gets plenty of attention is text shared online via Twitter. In fact, several of the sentiment lexicons used in this book (and commonly used in general) were designed for use with and validated on tweets. Both of the authors of this book are on Twitter and are fairly regular users of it, so in this case study, let’s compare the entire Twitter archives of Julia and David.
+
+## 7.1 Getting the data and distribution of tweets
+An individual can download their own Twitter archive by following directions available on Twitter’s website. 
+https://help.twitter.com/ja/managing-your-account/how-to-download-your-twitter-archive
+
+We each downloaded ours and will now open them up. Let’s use the lubridate package to convert the string timestamps to date-time objects and initially take a look at our tweeting patterns overall (Figure 7.1).
+```{r}
+
+# package load
+library(lubridate)
+library(ggplot2)
+library(dplyr)
+library(readr)
+
+
+tweets_dave <- read_csv("C:/Users/kojikm.mizumura/Desktop/tweets_dave.csv")
+head(tweets_dave)
+
+tweets <- bind_rows(tweets_julia %>% 
+                     mutate(person="Julia"),
+                   tweets_dave %>% 
+                     mutate(person="David")) %>% 
+  mutate(timestamp=ymd_hms(timestamp)
+         
+ggplot()
+
+```
+
+
