@@ -1,6 +1,11 @@
 
 # Theorecial materials
-## Topic model introduction
+
+## ISM   
+### NLP Recent development  
+http://chasen.org/~daiti-m/paper/MLwakate-2018-nlp.pdf  
+
+### Topic model introduction
 by Mochashi-san (Institute of Statistical Mathematics)  
 https://www.ism.ac.jp/~daichi/lectures/H24-TopicModel/  
 
