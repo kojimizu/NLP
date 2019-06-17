@@ -26,3 +26,6 @@ R Solutions - https://rpubs.com/yamano357/
 # Others  
 ## NAIST STudy guide  
 http://cl.sd.tmu.ac.jp/prospective/prerequisite  
+
+## NAgaoka Institute of Technology Youtube Site
+https://www.youtube.com/user/jnlporg
