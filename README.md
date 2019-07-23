@@ -1,12 +1,14 @@
 
 # Theorecial materials
+## Paper summary {kojimizu/nlp-library}  
+https://github.com/kojimizu/nlp-library  
 
 ## ISM   
 ### NLP Recent development  
 http://chasen.org/~daiti-m/paper/MLwakate-2018-nlp.pdf  
 
 ### Topic model introduction
-by Mochashi-san (Institute of Statistical Mathematics)  
+by Motohashi-san (Institute of Statistical Mathematics)  
 https://www.ism.ac.jp/~daichi/lectures/H24-TopicModel/  
 
 ## Graham Neubig NLP Tutorial  
@@ -24,7 +26,7 @@ http://www.cl.ecei.tohoku.ac.jp/nlp100/
 R Solutions - https://rpubs.com/yamano357/  
 
 # Others  
-## NAIST STudy guide  
+## NAIST study guide  
 http://cl.sd.tmu.ac.jp/prospective/prerequisite  
 
 ## NAgaoka Institute of Technology Youtube Site
