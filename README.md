@@ -1,6 +1,6 @@
 
 # Theorecial materials
-## Paper summary {`kojimizu/nlp-library`}  
+## Paper summary   
 https://github.com/kojimizu/nlp-library  
 
 ## ISM   
