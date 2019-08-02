@@ -1,6 +1,6 @@
 
 # Theorecial materials
-## Paper summary {kojimizu/nlp-library}  
+## Paper summary {`kojimizu/nlp-library`}  
 https://github.com/kojimizu/nlp-library  
 
 ## ISM   
@@ -29,5 +29,5 @@ R Solutions - https://rpubs.com/yamano357/
 ## NAIST study guide  
 http://cl.sd.tmu.ac.jp/prospective/prerequisite  
 
-## NAgaoka Institute of Technology Youtube Site
+## Nagaoka Institute of Technology Youtube Site
 https://www.youtube.com/user/jnlporg
