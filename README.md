@@ -1,7 +1,15 @@
 
 # Theorecial materials
 ## Paper summary   
-https://github.com/kojimizu/nlp-library  
+Repository: https://github.com/kojimizu/nlp-library  
+
+## Online Courses
+Stanford cs224n - Deep learning for NLP  
+Web: http://web.stanford.edu/class/cs224n/index.html   
+
+## Microsoft NLP
+NLP Best practices 
+Repo: https://github.com/kojimizu/nlp-recipes  
 
 ## ISM   
 ### NLP Recent development  
