@@ -1,5 +1,5 @@
 
-##Theorecial materials
+## Theorecial materials
 ### Paper summary   
 Repository: https://github.com/kojimizu/nlp-library  
 
